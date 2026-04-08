@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Demande materiel existant{% endblock %}
+{% block content %}
+<h2 class="mb-3">Nouvelle demande de materiel existant</h2>
+<form method="post" class="card">
+    <div class="card-body">
+        {% csrf_token %}
+        <h5>Informations generales</h5>
+        {{ form.as_p }}
+        <hr>
+        <h5>Lignes de demande</h5>
+        {{ formset.management_form }}
+        {% for f in formset %}
+            <div class="border rounded p-3 mb-3">
+                {{ f.as_p }}
+            </div>
+        {% endfor %}
+        <button class="btn btn-primary">Soumettre la demande</button>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,134 @@
+:root {
+    --brand-red: #9f1d24;
+    --brand-red-dark: #7f1419;
+    --bg-light: #f4f6f8;
+    --text-dark: #212529;
+}
+
+body {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 260px;
+    background: linear-gradient(180deg, var(--brand-red), var(--brand-red-dark));
+    color: #fff;
+    padding: 1.5rem 1rem;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-brand {
+    margin-bottom: 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    padding-bottom: 1rem;
+}
+
+.sidebar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.92);
+    border-radius: 0.6rem;
+    margin-bottom: 0.3rem;
+    padding: 0.55rem 0.8rem;
+    transition: all 0.2s ease;
+}
+
+.sidebar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+
+.main-content {
+    margin-left: 260px;
+    flex: 1;
+    padding: 1rem 1.4rem 2rem 1.4rem;
+}
+
+.topbar {
+    background: #fff;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 0.9rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.content-area {
+    margin-top: 1rem;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.stat-card h3 {
+    color: var(--brand-red);
+    margin: 0;
+    font-weight: 700;
+}
+
+.stat-card p {
+    color: #6c757d;
+    margin-bottom: 0.4rem;
+}
+
+.btn-primary {
+    background-color: var(--brand-red);
+    border-color: var(--brand-red);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--brand-red-dark);
+    border-color: var(--brand-red-dark);
+}
+
+.placeholder-image {
+    background: #e9ecef;
+    min-height: 220px;
+    border-radius: 0.6rem;
+    color: #6c757d;
+}
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(120deg, #f0f2f5, #e4e8ec);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        position: relative;
+        width: 100%;
+        min-height: auto;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding-top: 0.8rem;
+    }
+
+    .app-shell {
+        flex-direction: column;
+    }
+}

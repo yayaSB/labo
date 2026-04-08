@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Suppression materiel{% endblock %}
+{% block content %}
+<div class="card border-danger">
+    <div class="card-body">
+        <h3>Confirmer la suppression</h3>
+        <p>Voulez-vous supprimer le materiel <strong>{{ object.nom }}</strong> ?</p>
+        <form method="post">
+            {% csrf_token %}
+            <button class="btn btn-danger">Oui, supprimer</button>
+            <a href="{% url 'materiel_list' %}" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - LabResa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="login-page">
+    <div class="login-card card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="mb-1">LabResa</h2>
+            <p class="text-muted mb-4">Gestion et reservation de materiel laboratoire</p>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Nom d'utilisateur</label>
+                    {{ form.username }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mot de passe</label>
+                    {{ form.password }}
+                </div>
+                {% if form.errors %}
+                    <div class="alert alert-danger">Identifiants invalides.</div>
+                {% endif %}
+                <button class="btn btn-primary w-100">Se connecter</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

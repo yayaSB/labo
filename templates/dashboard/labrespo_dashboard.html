@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Dashboard LabRespo{% endblock %}
+{% block content %}
+<h2 class="mb-4">Dashboard LabRespo</h2>
+<div class="row g-3 mb-4">
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body"><p>Materiels</p><h3>{{ stats.materiels }}</h3></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body"><p>Stock faible</p><h3>{{ stats.stock_faible }}</h3></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body"><p>En attente</p><h3>{{ stats.en_attente }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><p>Demandes validees</p><h3>{{ stats.validees }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><p>Retours en retard</p><h3>{{ stats.retards }}</h3></div></div></div>
+</div>
+
+<div class="card">
+    <div class="card-header">Demandes recentes</div>
+    <div class="table-responsive">
+        <table class="table table-striped mb-0">
+            <thead><tr><th>ID</th><th>Etudiant</th><th>Type</th><th>Statut</th><th>Action</th></tr></thead>
+            <tbody>
+            {% for d in demandes_recentes %}
+                <tr>
+                    <td>#{{ d.pk }}</td>
+                    <td>{{ d.etudiant }}</td>
+                    <td>{{ d.get_type_demande_display }}</td>
+                    <td>{{ d.get_statut_display }}</td>
+                    <td><a href="{% url 'demande_detail' d.pk %}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">Aucune demande.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

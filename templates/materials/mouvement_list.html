@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Mouvements stock{% endblock %}
+{% block content %}
+<h2 class="mb-3">Historique des mouvements</h2>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead><tr><th>Date</th><th>Materiel</th><th>Demande</th><th>Type</th><th>Quantite</th><th>Valide par</th></tr></thead>
+        <tbody>
+        {% for m in mouvements %}
+            <tr>
+                <td>{{ m.date_mouvement|date:"d/m/Y H:i" }}</td>
+                <td>{{ m.materiel.nom }}</td>
+                <td><a href="{% url 'demande_detail' m.demande.pk %}">#{{ m.demande.pk }}</a></td>
+                <td>{{ m.get_type_mouvement_display }}</td>
+                <td>{{ m.quantite }}</td>
+                <td>{{ m.valide_par }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6">Aucun mouvement.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Detail demande{% endblock %}
+{% block content %}
+<h2 class="mb-3">Demande #{{ demande.pk }}</h2>
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card mb-3">
+            <div class="card-body">
+                <p><strong>Etudiant:</strong> {{ demande.etudiant }}</p>
+                <p><strong>Groupe:</strong> {{ demande.groupe.nom_groupe }}</p>
+                <p><strong>Type:</strong> {{ demande.get_type_demande_display }}</p>
+                <p><strong>Statut:</strong> <span class="badge text-bg-secondary">{{ demande.get_statut_display }}</span></p>
+                <p><strong>Date souhaitée retour:</strong> {{ demande.date_souhaitee_retour }}</p>
+                <p><strong>Motif:</strong> {{ demande.motif }}</p>
+                <p><strong>Commentaire enseignant:</strong> {{ demande.commentaire_enseignant|default:"-" }}</p>
+                <p><strong>Commentaire LabRespo:</strong> {{ demande.commentaire_labrespo|default:"-" }}</p>
+            </div>
+        </div>
+
+        {% if demande.type_demande == 'EXISTANT' %}
+        <div class="card">
+            <div class="card-header">Lignes de demande</div>
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead><tr><th>Materiel</th><th>Qte demandee</th><th>Qte validee</th></tr></thead>
+                    <tbody>
+                    {% for l in demande.lignes_demande.all %}
+                        <tr>
+                            <td>{{ l.materiel.nom }}</td>
+                            <td>{{ l.quantite_demandee }}</td>
+                            <td>{{ l.quantite_validee }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="3">Aucune ligne.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-header">Demande de nouveau materiel</div>
+            <div class="card-body">
+                {% if demande.nouveau_materiel %}
+                    <p><strong>Nom souhaité:</strong> {{ demande.nouveau_materiel.nom_materiel_souhaite }}</p>
+                    <p><strong>Catégorie:</strong> {{ demande.nouveau_materiel.categorie_souhaitee }}</p>
+                    <p><strong>Description:</strong> {{ demande.nouveau_materiel.description }}</p>
+                    <p><strong>Justification:</strong> {{ demande.nouveau_materiel.justification }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">Actions</div>
+            <div class="card-body d-grid gap-2">
+                {% if request.user.role == 'ENSEIGNANT' %}
+                    <a class="btn btn-primary" href="{% url 'teacher_comment_demande' demande.pk %}">Commenter / recommander</a>
+                {% endif %}
+                {% if request.user.role == 'LABRESPO' %}
+                    <a class="btn btn-outline-primary" href="{% url 'labrespo_decision_demande' demande.pk %}">Valider / refuser</a>
+                    {% if demande.statut == 'VALIDEE' and demande.type_demande == 'EXISTANT' %}
+                        <a class="btn btn-success" href="{% url 'confirmer_sortie' demande.pk %}">Confirmer sortie</a>
+                    {% endif %}
+                    {% if demande.statut == 'EN_COURS' and demande.type_demande == 'EXISTANT' %}
+                        <a class="btn btn-warning" href="{% url 'confirmer_retour' demande.pk %}">Confirmer retour</a>
+                    {% endif %}
+                {% endif %}
+                <a class="btn btn-secondary" href="{% url 'demande_list' %}">Retour liste</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

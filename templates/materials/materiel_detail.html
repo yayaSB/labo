@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Detail materiel{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="row g-4">
+            <div class="col-md-4">
+                {% if materiel.image %}
+                    <img src="{{ materiel.image.url }}" alt="{{ materiel.nom }}" class="img-fluid rounded">
+                {% else %}
+                    <div class="placeholder-image d-flex align-items-center justify-content-center">Aucune image</div>
+                {% endif %}
+            </div>
+            <div class="col-md-8">
+                <h2>{{ materiel.nom }}</h2>
+                <p class="text-muted">{{ materiel.categorie }}</p>
+                <p>{{ materiel.description }}</p>
+                <p><strong>Stock:</strong> {{ materiel.quantite_disponible }}/{{ materiel.quantite_totale }}</p>
+                <p><strong>Etat:</strong> {{ materiel.get_etat_general_display }}</p>
+                <p><strong>Date achat:</strong> {{ materiel.date_achat|default:"-" }}</p>
+                {% if request.user.role == 'ETUDIANT' %}
+                    <a href="{% url 'demande_existant_create' %}" class="btn btn-primary">Faire une demande</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

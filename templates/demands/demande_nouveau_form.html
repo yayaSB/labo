@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Demande nouveau materiel{% endblock %}
+{% block content %}
+<h2 class="mb-3">Demande de nouveau materiel</h2>
+<form method="post" class="card">
+    <div class="card-body">
+        {% csrf_token %}
+        <h5>Demande principale</h5>
+        {{ parent_form.as_p }}
+        <hr>
+        <h5>Specification du materiel souhaite</h5>
+        {{ child_form.as_p }}
+        <button class="btn btn-primary">Soumettre</button>
+    </div>
+</form>
+{% endblock %}

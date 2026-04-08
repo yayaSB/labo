@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Detail groupe{% endblock %}
+{% block content %}
+<h2 class="mb-3">Groupe {{ groupe.nom_groupe }}</h2>
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Etudiants</div>
+            <ul class="list-group list-group-flush">
+                {% for m in membres %}
+                    <li class="list-group-item">{{ m.etudiant.get_full_name|default:m.etudiant.username }} ({{ m.etudiant.email }})</li>
+                {% empty %}
+                    <li class="list-group-item">Aucun etudiant dans ce groupe.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Demandes du groupe</div>
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead><tr><th>ID</th><th>Etudiant</th><th>Statut</th><th></th></tr></thead>
+                    <tbody>
+                    {% for d in demandes %}
+                        <tr>
+                            <td>#{{ d.pk }}</td>
+                            <td>{{ d.etudiant }}</td>
+                            <td>{{ d.get_statut_display }}</td>
+                            <td><a href="{% url 'demande_detail' d.pk %}">Detail</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4">Aucune demande.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

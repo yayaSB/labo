@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Decision LabRespo{% endblock %}
+{% block content %}
+<h2 class="mb-3">Decision LabRespo - Demande #{{ demande.pk }}</h2>
+<form method="post" class="card">
+    <div class="card-body">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn btn-primary">Enregistrer decision</button>
+        <a href="{% url 'demande_detail' demande.pk %}" class="btn btn-secondary">Retour</a>
+    </div>
+</form>
+{% endblock %}

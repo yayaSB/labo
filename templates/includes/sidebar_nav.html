@@ -1,0 +1,33 @@
+<nav class="nav flex-column sidebar-nav">
+    <a class="nav-link" href="{% url 'role_redirect' %}">Accueil</a>
+
+    {% if request.user.role == 'ETUDIANT' %}
+        <a class="nav-link" href="{% url 'dashboard_etudiant' %}">Dashboard Etudiant</a>
+        <a class="nav-link" href="{% url 'materiel_list' %}">Catalogue</a>
+        <a class="nav-link" href="{% url 'demande_existant_create' %}">Demande existant</a>
+        <a class="nav-link" href="{% url 'demande_nouveau_create' %}">Demande nouveau</a>
+        <a class="nav-link" href="{% url 'demande_list' %}">Mes demandes</a>
+    {% endif %}
+
+    {% if request.user.role == 'ENSEIGNANT' %}
+        <a class="nav-link" href="{% url 'dashboard_enseignant' %}">Dashboard Enseignant</a>
+        <a class="nav-link" href="{% url 'teacher_group_list' %}">Mes groupes</a>
+        <a class="nav-link" href="{% url 'demande_list' %}">Demandes groupes</a>
+    {% endif %}
+
+    {% if request.user.role == 'LABRESPO' %}
+        <a class="nav-link" href="{% url 'dashboard_labrespo' %}">Dashboard LabRespo</a>
+        <a class="nav-link" href="{% url 'materiel_list' %}">Materiels</a>
+        <a class="nav-link" href="{% url 'materiel_create' %}">Ajouter materiel</a>
+        <a class="nav-link" href="{% url 'demande_list' %}">Toutes demandes</a>
+        <a class="nav-link" href="{% url 'mouvement_list' %}">Mouvements stock</a>
+    {% endif %}
+
+    {% if request.user.role == 'SERVICE_3PH' %}
+        <a class="nav-link" href="{% url 'dashboard_service3ph' %}">Dashboard Service 3PH</a>
+        <a class="nav-link" href="{% url 'service_group_list' %}">Groupes</a>
+        <a class="nav-link" href="{% url 'service_teacher_list' %}">Enseignants</a>
+        <a class="nav-link" href="{% url 'affectation_create' %}">Affecter groupe</a>
+        <a class="nav-link" href="{% url 'demande_list' %}">Vision globale demandes</a>
+    {% endif %}
+</nav>

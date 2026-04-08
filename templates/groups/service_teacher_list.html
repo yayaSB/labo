@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Enseignants{% endblock %}
+{% block content %}
+<h2 class="mb-3">Liste des enseignants</h2>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead><tr><th>Nom</th><th>Email</th><th>Departement</th></tr></thead>
+        <tbody>
+        {% for e in enseignants %}
+            <tr>
+                <td>{{ e.get_full_name|default:e.username }}</td>
+                <td>{{ e.email }}</td>
+                <td>{{ e.departement }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="3">Aucun enseignant.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
