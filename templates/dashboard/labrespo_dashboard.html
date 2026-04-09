@@ -5,8 +5,8 @@
 <div class="row g-3 mb-4">
     <div class="col-md-2"><div class="card stat-card"><div class="card-body"><p>Materiels</p><h3>{{ stats.materiels }}</h3></div></div></div>
     <div class="col-md-2"><div class="card stat-card"><div class="card-body"><p>Stock faible</p><h3>{{ stats.stock_faible }}</h3></div></div></div>
-    <div class="col-md-2"><div class="card stat-card"><div class="card-body"><p>En attente</p><h3>{{ stats.en_attente }}</h3></div></div></div>
-    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><p>Demandes validees</p><h3>{{ stats.validees }}</h3></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body"><p>A traiter</p><h3>{{ stats.en_attente }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><p>Demandes disponibles</p><h3>{{ stats.validees }}</h3></div></div></div>
     <div class="col-md-3"><div class="card stat-card"><div class="card-body"><p>Retours en retard</p><h3>{{ stats.retards }}</h3></div></div></div>
 </div>
 
@@ -21,7 +21,10 @@
                     <td>#{{ d.pk }}</td>
                     <td>{{ d.etudiant }}</td>
                     <td>{{ d.get_type_demande_display }}</td>
-                    <td>{{ d.get_statut_display }}</td>
+                    <td>
+                        <span class="badge {{ d.statut_badge_class }}">{{ d.get_statut_display }}</span>
+                        <div class="small text-muted mt-1">{{ d.statut_message }}</div>
+                    </td>
                     <td><a href="{% url 'demande_detail' d.pk %}" class="btn btn-sm btn-outline-primary">Detail</a></td>
                 </tr>
             {% empty %}

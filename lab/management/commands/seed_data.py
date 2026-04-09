@@ -120,7 +120,7 @@ class Command(BaseCommand):
             groupe=created_groupes[0],
             type_demande=Demande.TypeDemande.EXISTANT,
             defaults={
-                "statut": Demande.Statut.EN_ATTENTE,
+                "statut": Demande.Statut.EN_ATTENTE_VALIDATION_ENSEIGNANT,
                 "date_souhaitee_retour": timezone.localdate() + timedelta(days=7),
                 "motif": "Travaux pratiques de microscopie.",
                 "commentaire_enseignant": "",
@@ -138,7 +138,7 @@ class Command(BaseCommand):
             groupe=created_groupes[1],
             type_demande=Demande.TypeDemande.NOUVEAU,
             defaults={
-                "statut": Demande.Statut.EN_ATTENTE,
+                "statut": Demande.Statut.EN_ATTENTE_VALIDATION_ENSEIGNANT,
                 "date_souhaitee_retour": timezone.localdate() + timedelta(days=10),
                 "motif": "Projet de vision avancee.",
                 "commentaire_enseignant": "",

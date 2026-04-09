@@ -1,0 +1,20 @@
+body {
+  background-color: #f5f7fb;
+}
+
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+}
+
+.notification-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+}

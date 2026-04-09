@@ -23,7 +23,10 @@
                     <td><a href="{% url 'demande_detail' d.pk %}">#{{ d.pk }}</a></td>
                     <td>{{ d.get_type_demande_display }}</td>
                     <td>{{ d.groupe.nom_groupe }}</td>
-                    <td><span class="badge text-bg-secondary">{{ d.get_statut_display }}</span></td>
+                    <td>
+                        <span class="badge {{ d.statut_badge_class }}">{{ d.get_statut_display }}</span>
+                        <div class="small text-muted mt-1">{{ d.statut_message }}</div>
+                    </td>
                     <td>{{ d.date_demande|date:"d/m/Y" }}</td>
                 </tr>
             {% empty %}

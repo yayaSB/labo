@@ -93,15 +93,28 @@ class DemandeNouveauParentForm(forms.ModelForm):
         self.fields["groupe"].queryset = Groupe.objects.filter(id__in=groupes_ids)
 
 
-class TeacherCommentForm(forms.ModelForm):
+class TeacherDecisionForm(forms.ModelForm):
     class Meta:
         model = Demande
-        fields = ["commentaire_enseignant"]
+        fields = ["statut", "commentaire_enseignant"]
         widgets = {
             "commentaire_enseignant": forms.Textarea(
                 attrs={"rows": 4, "placeholder": "Commentaire / recommandation"}
             )
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["statut"].choices = [
+            (
+                Demande.Statut.VALIDEE_PAR_ENSEIGNANT,
+                "Valider pedagogiquement",
+            ),
+            (
+                Demande.Statut.REFUSEE,
+                "Refuser pedagogiquement",
+            ),
+        ]
 
 
 class LabRespoDecisionForm(forms.ModelForm):
@@ -112,8 +125,12 @@ class LabRespoDecisionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["statut"].choices = [
-            (Demande.Statut.VALIDEE, "Valider"),
+            (Demande.Statut.EN_COURS_TRAITEMENT, "Mettre en cours de traitement"),
+            (Demande.Statut.EN_PAUSE, "Mettre en pause"),
+            (Demande.Statut.DISPONIBLE, "Marquer disponible"),
+            (Demande.Statut.RETIREE, "Marquer retiree"),
             (Demande.Statut.REFUSEE, "Refuser"),
+            (Demande.Statut.TERMINEE, "Terminer"),
         ]
 
 
@@ -124,4 +141,6 @@ class AffectationGroupeForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["enseignant"].queryset = User.objects.filter(role=User.Role.ENSEIGNANT)
+        self.fields["enseignant"].queryset = User.objects.filter(
+            role__in=[User.Role.ENSEIGNANT, User.Role.ENCADRANT]
+        )

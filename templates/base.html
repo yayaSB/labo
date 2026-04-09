@@ -12,6 +12,7 @@
 <div class="app-shell">
     <aside class="sidebar">
         <div class="sidebar-brand">
+            <img src="{% static 'css/images/hestimlogo.png' %}" alt="HESTIM" class="sidebar-logo">
             <h4>LabResa</h4>
             <small>Portail laboratoire</small>
         </div>
@@ -26,7 +27,10 @@
             </div>
             <div class="d-flex align-items-center gap-2">
                 <a href="{% url 'demande_list' %}" class="btn btn-sm btn-outline-secondary">Demandes</a>
-                <a href="{% url 'logout' %}" class="btn btn-sm btn-danger">Deconnexion</a>
+                <form method="post" action="{% url 'logout' %}" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger">Deconnexion</button>
+                </form>
             </div>
         </header>
 

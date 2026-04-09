@@ -20,7 +20,10 @@
                 <td>{{ d.etudiant }}</td>
                 <td>{{ d.groupe.nom_groupe }}</td>
                 <td>{{ d.get_type_demande_display }}</td>
-                <td>{{ d.get_statut_display }}</td>
+                <td>
+                    <span class="badge {{ d.statut_badge_class }}">{{ d.get_statut_display }}</span>
+                    <div class="small text-muted mt-1">{{ d.statut_message }}</div>
+                </td>
                 <td>{{ d.date_demande|date:"d/m/Y H:i" }}</td>
                 <td><a href="{% url 'demande_detail' d.pk %}" class="btn btn-sm btn-outline-primary">Detail</a></td>
             </tr>

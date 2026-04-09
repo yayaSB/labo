@@ -1,12 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Commentaire enseignant{% endblock %}
+{% block title %}Validation enseignant{% endblock %}
 {% block content %}
-<h2 class="mb-3">Commenter la demande #{{ demande.pk }}</h2>
+<h2 class="mb-3">Validation pedagogique - Demande #{{ demande.pk }}</h2>
 <form method="post" class="card">
     <div class="card-body">
         {% csrf_token %}
+        <p class="text-muted">Choisissez une decision pedagogique et ajoutez un commentaire si necessaire.</p>
         {{ form.as_p }}
-        <button class="btn btn-primary">Enregistrer commentaire</button>
+        <button class="btn btn-primary">Enregistrer decision enseignant</button>
         <a href="{% url 'demande_detail' demande.pk %}" class="btn btn-secondary">Annuler</a>
     </div>
 </form>

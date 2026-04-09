@@ -21,10 +21,15 @@
                     <td>{{ d.etudiant }}</td>
                     <td>{{ d.groupe.nom_groupe }}</td>
                     <td>{{ d.get_type_demande_display }}</td>
-                    <td>{{ d.get_statut_display }}</td>
+                    <td>
+                        <span class="badge {{ d.statut_badge_class }}">{{ d.get_statut_display }}</span>
+                        <div class="small text-muted mt-1">{{ d.statut_message }}</div>
+                    </td>
                     <td>
                         <a href="{% url 'demande_detail' d.pk %}" class="btn btn-sm btn-outline-primary">Voir</a>
-                        <a href="{% url 'teacher_comment_demande' d.pk %}" class="btn btn-sm btn-primary">Commenter</a>
+                        {% if d.statut == 'EN_ATTENTE_VALIDATION_ENSEIGNANT' %}
+                            <a href="{% url 'teacher_comment_demande' d.pk %}" class="btn btn-sm btn-primary">Valider / Refuser</a>
+                        {% endif %}
                     </td>
                 </tr>
             {% empty %}

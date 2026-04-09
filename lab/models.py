@@ -7,19 +7,46 @@ from django.utils import timezone
 class User(AbstractUser):
     class Role(models.TextChoices):
         ETUDIANT = "ETUDIANT", "Etudiant"
+        ENCADRANT = "ENCADRANT", "Encadrant"
         ENSEIGNANT = "ENSEIGNANT", "Enseignant"
+        LABO_TEMPS = "LABO_TEMPS", "Labo Temps"
         LABRESPO = "LABRESPO", "LabRespo"
+        SERVICE_ACHAT = "SERVICE_ACHAT", "Service Achat"
         SERVICE_3PH = "SERVICE_3PH", "Service 3PH"
 
     role = models.CharField(
         max_length=20, choices=Role.choices, default=Role.SERVICE_3PH
     )
     departement = models.CharField(max_length=120, blank=True)
+    classe = models.CharField(max_length=60, blank=True)
+    encadrant = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="etudiants_encadres",
+    )
     date_inscription = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         full_name = self.get_full_name().strip()
         return full_name if full_name else self.username
+
+    @property
+    def role_api(self):
+        mapping = {
+            self.Role.ETUDIANT: "etudiant",
+            self.Role.ENSEIGNANT: "encadrant",
+            self.Role.ENCADRANT: "encadrant",
+            self.Role.LABRESPO: "labo",
+            self.Role.LABO_TEMPS: "labo",
+            self.Role.SERVICE_ACHAT: "achat",
+            self.Role.SERVICE_3PH: "admin",
+        }
+        return mapping.get(self.role, "")
+
+    def has_api_role(self, *roles):
+        return self.role_api in roles
 
 
 class Groupe(models.Model):
@@ -73,13 +100,18 @@ class AffectationGroupe(models.Model):
         verbose_name_plural = "Affectations groupes"
 
     def clean(self):
-        if self.enseignant.role != User.Role.ENSEIGNANT:
+        if self.enseignant_id and self.enseignant.role not in [
+            User.Role.ENSEIGNANT,
+            User.Role.ENCADRANT,
+        ]:
             raise ValidationError("Le destinataire doit etre un ENSEIGNANT.")
-        if self.attribue_par.role != User.Role.SERVICE_3PH:
+        if self.attribue_par_id and self.attribue_par.role != User.Role.SERVICE_3PH:
             raise ValidationError("L'attribution doit etre faite par SERVICE_3PH.")
 
     def __str__(self):
-        return f"{self.groupe.nom_groupe} -> {self.enseignant}"
+        groupe_label = self.groupe.nom_groupe if self.groupe_id else "Groupe non defini"
+        enseignant_label = str(self.enseignant) if self.enseignant_id else "Enseignant non defini"
+        return f"{groupe_label} -> {enseignant_label}"
 
 
 class Materiel(models.Model):
@@ -124,12 +156,20 @@ class Demande(models.Model):
         NOUVEAU = "NOUVEAU", "Nouveau materiel"
 
     class Statut(models.TextChoices):
-        EN_ATTENTE = "EN_ATTENTE", "En attente"
-        COMMENTEE = "COMMENTEE", "Commentee enseignant"
-        VALIDEE = "VALIDEE", "Validee"
+        EN_ATTENTE_VALIDATION_ENSEIGNANT = (
+            "EN_ATTENTE_VALIDATION_ENSEIGNANT",
+            "En attente de validation enseignant",
+        )
+        VALIDEE_PAR_ENSEIGNANT = (
+            "VALIDEE_PAR_ENSEIGNANT",
+            "Validee par enseignant",
+        )
+        EN_COURS_TRAITEMENT = "EN_COURS_TRAITEMENT", "En cours de traitement"
+        EN_PAUSE = "EN_PAUSE", "En pause"
+        DISPONIBLE = "DISPONIBLE", "Disponible"
         REFUSEE = "REFUSEE", "Refusee"
-        EN_COURS = "EN_COURS", "Materiel sorti"
-        RETOURNEE = "RETOURNEE", "Retournee"
+        RETIREE = "RETIREE", "Retiree"
+        TERMINEE = "TERMINEE", "Terminee"
 
     etudiant = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="demandes_etudiant"
@@ -137,7 +177,9 @@ class Demande(models.Model):
     groupe = models.ForeignKey(Groupe, on_delete=models.PROTECT, related_name="demandes")
     type_demande = models.CharField(max_length=10, choices=TypeDemande.choices)
     statut = models.CharField(
-        max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE
+        max_length=40,
+        choices=Statut.choices,
+        default=Statut.EN_ATTENTE_VALIDATION_ENSEIGNANT,
     )
     date_demande = models.DateTimeField(default=timezone.now)
     date_souhaitee_retour = models.DateField()
@@ -149,15 +191,55 @@ class Demande(models.Model):
         ordering = ["-date_demande"]
 
     def clean(self):
+        if not self.etudiant_id:
+            return
         if self.etudiant.role != User.Role.ETUDIANT:
             raise ValidationError("La demande doit etre creee par un ETUDIANT.")
 
     @property
+    def statut_message(self):
+        messages = {
+            self.Statut.EN_ATTENTE_VALIDATION_ENSEIGNANT: "En attente de validation de votre enseignant",
+            self.Statut.VALIDEE_PAR_ENSEIGNANT: "Validee par votre enseignant",
+            self.Statut.EN_COURS_TRAITEMENT: "En cours de traitement par le laboratoire",
+            self.Statut.EN_PAUSE: "Mise en pause par le laboratoire",
+            self.Statut.DISPONIBLE: "Votre materiel est disponible",
+            self.Statut.REFUSEE: "Votre demande a ete refusee",
+            self.Statut.RETIREE: "Materiel retire, en attente de cloture",
+            self.Statut.TERMINEE: "Demande terminee",
+        }
+        return messages.get(self.statut, self.get_statut_display())
+
+    @property
+    def statut_badge_class(self):
+        styles = {
+            self.Statut.EN_ATTENTE_VALIDATION_ENSEIGNANT: "bg-warning text-dark",
+            self.Statut.VALIDEE_PAR_ENSEIGNANT: "bg-info text-dark",
+            self.Statut.EN_COURS_TRAITEMENT: "bg-primary",
+            self.Statut.EN_PAUSE: "bg-secondary",
+            self.Statut.DISPONIBLE: "bg-success",
+            self.Statut.REFUSEE: "bg-danger",
+            self.Statut.RETIREE: "bg-dark",
+            self.Statut.TERMINEE: "bg-success",
+        }
+        return styles.get(self.statut, "bg-secondary")
+
+    @property
     def en_retard(self):
-        return self.statut == self.Statut.EN_COURS and self.date_souhaitee_retour < timezone.localdate()
+        active_statuses = [
+            self.Statut.EN_COURS_TRAITEMENT,
+            self.Statut.EN_PAUSE,
+            self.Statut.DISPONIBLE,
+            self.Statut.RETIREE,
+        ]
+        return self.statut in active_statuses and self.date_souhaitee_retour < timezone.localdate()
 
     def __str__(self):
-        return f"Demande #{self.pk} - {self.etudiant} - {self.get_type_demande_display()}"
+        etudiant_label = str(self.etudiant) if self.etudiant_id else "Etudiant non defini"
+        type_label = (
+            self.get_type_demande_display() if self.type_demande else "Type non defini"
+        )
+        return f"Demande #{self.pk or 'new'} - {etudiant_label} - {type_label}"
 
 
 class LigneDemande(models.Model):
@@ -215,3 +297,139 @@ class MouvementStock(models.Model):
 
     def __str__(self):
         return f"{self.get_type_mouvement_display()} {self.materiel.nom} ({self.quantite})"
+
+
+class Composant(models.Model):
+    nom = models.CharField(max_length=180)
+    reference = models.CharField(max_length=80, unique=True)
+    quantite_disponible = models.PositiveIntegerField(default=0)
+    seuil_alerte = models.PositiveIntegerField(default=0)
+    localisation = models.CharField(max_length=120, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["nom"]
+        db_table = "composants"
+
+    def __str__(self):
+        return f"{self.nom} ({self.reference})"
+
+
+class DemandeWorkflow(models.Model):
+    class Statut(models.TextChoices):
+        EN_ATTENTE_ENCADRANT = "en_attente_encadrant", "En attente encadrant"
+        EN_ATTENTE_LABO = "en_attente_labo", "En attente labo"
+        EN_ATTENTE_ACHAT = "en_attente_achat", "En attente achat"
+        APPROUVEE = "approuvee", "Approuvee"
+        REFUSEE = "refusee", "Refusee"
+        TERMINEE = "terminee", "Terminee"
+
+    etudiant = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="workflow_demandes",
+    )
+    composant = models.ForeignKey(
+        Composant,
+        on_delete=models.PROTECT,
+        related_name="demandes",
+    )
+    quantite = models.PositiveIntegerField()
+    statut = models.CharField(
+        max_length=30,
+        choices=Statut.choices,
+        default=Statut.EN_ATTENTE_ENCADRANT,
+    )
+    date_demande = models.DateTimeField(default=timezone.now)
+    commentaire_encadrant = models.TextField(blank=True)
+    date_derniere_maj = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-date_demande"]
+        db_table = "demandes"
+
+    def clean(self):
+        if self.etudiant_id and not self.etudiant.has_api_role("etudiant"):
+            raise ValidationError("La demande doit etre creee par un etudiant.")
+
+    @property
+    def can_cancel_by_student(self):
+        return self.statut == self.Statut.EN_ATTENTE_ENCADRANT
+
+    def __str__(self):
+        return f"DemandeWorkflow #{self.pk} - {self.etudiant} - {self.composant.nom}"
+
+
+class Achat(models.Model):
+    class Statut(models.TextChoices):
+        EN_COURS = "en_cours", "En cours"
+        RECU = "recu", "Recu"
+
+    demande = models.ForeignKey(
+        DemandeWorkflow,
+        on_delete=models.CASCADE,
+        related_name="achats",
+    )
+    composant = models.ForeignKey(
+        Composant,
+        on_delete=models.PROTECT,
+        related_name="achats",
+    )
+    quantite_achetee = models.PositiveIntegerField()
+    fournisseur = models.CharField(max_length=180)
+    statut = models.CharField(
+        max_length=20,
+        choices=Statut.choices,
+        default=Statut.EN_COURS,
+    )
+    date_commande = models.DateTimeField(default=timezone.now)
+    date_reception = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["-date_commande"]
+        db_table = "achats"
+
+    def __str__(self):
+        return f"Achat #{self.pk} - {self.composant.reference}"
+
+
+class HistoriqueAction(models.Model):
+    demande = models.ForeignKey(
+        DemandeWorkflow,
+        on_delete=models.CASCADE,
+        related_name="historique_actions",
+    )
+    action = models.CharField(max_length=255)
+    acteur = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="historique_actions",
+    )
+    date_action = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-date_action"]
+        db_table = "historique"
+
+    def __str__(self):
+        return f"{self.action} ({self.date_action:%Y-%m-%d %H:%M})"
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    message = models.CharField(max_length=255)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+        db_table = "notifications"
+
+    def __str__(self):
+        return f"Notification #{self.pk} - {self.user}"

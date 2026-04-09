@@ -9,13 +9,13 @@
         <a class="nav-link" href="{% url 'demande_list' %}">Mes demandes</a>
     {% endif %}
 
-    {% if request.user.role == 'ENSEIGNANT' %}
+    {% if request.user.role == 'ENSEIGNANT' or request.user.role == 'ENCADRANT' %}
         <a class="nav-link" href="{% url 'dashboard_enseignant' %}">Dashboard Enseignant</a>
         <a class="nav-link" href="{% url 'teacher_group_list' %}">Mes groupes</a>
         <a class="nav-link" href="{% url 'demande_list' %}">Demandes groupes</a>
     {% endif %}
 
-    {% if request.user.role == 'LABRESPO' %}
+    {% if request.user.role == 'LABRESPO' or request.user.role == 'LABO_TEMPS' %}
         <a class="nav-link" href="{% url 'dashboard_labrespo' %}">Dashboard LabRespo</a>
         <a class="nav-link" href="{% url 'materiel_list' %}">Materiels</a>
         <a class="nav-link" href="{% url 'materiel_create' %}">Ajouter materiel</a>

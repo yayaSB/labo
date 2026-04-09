@@ -9,26 +9,40 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body class="login-page">
-    <div class="login-card card shadow-sm">
-        <div class="card-body p-4">
-            <h2 class="mb-1">LabResa</h2>
-            <p class="text-muted mb-4">Gestion et reservation de materiel laboratoire</p>
-            <form method="post">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label class="form-label">Nom d'utilisateur</label>
-                    {{ form.username }}
+    <div class="login-shell">
+        <header class="login-topbar">
+            <img src="{% static 'css/images/hestimlogo.png' %}" alt="HESTIM" class="login-topbar-logo">
+            <button class="btn login-menu-btn" type="button" aria-label="Menu">&#9776;</button>
+        </header>
+
+        <section class="login-panel card">
+            <div class="login-visual">
+                <div class="login-visual-inner">
+                    <img src="{% static 'css/images/hestimlogo.png' %}" alt="HESTIM" class="login-visual-logo">
+                    <p class="login-visual-text">Engineering & Business School</p>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Mot de passe</label>
-                    {{ form.password }}
-                </div>
-                {% if form.errors %}
-                    <div class="alert alert-danger">Identifiants invalides.</div>
-                {% endif %}
-                <button class="btn btn-primary w-100">Se connecter</button>
-            </form>
-        </div>
+            </div>
+
+            <div class="login-form-side">
+                <h2 class="login-title">Connectez-vous</h2>
+                <form method="post" class="login-form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Email / Username</label>
+                        {{ form.username }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mot de passe</label>
+                        {{ form.password }}
+                    </div>
+                    {% if form.errors %}
+                        <div class="alert alert-danger">Identifiants invalides.</div>
+                    {% endif %}
+                    <button class="btn btn-primary login-submit">SE CONNECTER</button>
+                </form>
+                <p class="login-help">Les comptes sont geres uniquement par l'administration.</p>
+            </div>
+        </section>
     </div>
 </body>
 </html>

@@ -26,7 +26,7 @@
                         <tr>
                             <td>#{{ d.pk }}</td>
                             <td>{{ d.etudiant }}</td>
-                            <td>{{ d.get_statut_display }}</td>
+                            <td><span class="badge {{ d.statut_badge_class }}">{{ d.get_statut_display }}</span></td>
                             <td><a href="{% url 'demande_detail' d.pk %}">Detail</a></td>
                         </tr>
                     {% empty %}
