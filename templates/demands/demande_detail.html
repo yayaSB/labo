@@ -13,7 +13,7 @@
                 <p><strong>Suivi:</strong> <span class="text-muted">{{ demande.statut_message }}</span></p>
                 <p><strong>Date souhaitée retour:</strong> {{ demande.date_souhaitee_retour }}</p>
                 <p><strong>Motif:</strong> {{ demande.motif }}</p>
-                <p><strong>Commentaire enseignant:</strong> {{ demande.commentaire_enseignant|default:"-" }}</p>
+                <p><strong>Commentaire encadrant:</strong> {{ demande.commentaire_enseignant|default:"-" }}</p>
                 <p><strong>Commentaire LabRespo:</strong> {{ demande.commentaire_labrespo|default:"-" }}</p>
             </div>
         </div>
@@ -57,7 +57,7 @@
         <div class="card">
             <div class="card-header">Actions</div>
             <div class="card-body d-grid gap-2">
-                {% if request.user.role == 'ENSEIGNANT' %}
+                {% if request.user.role == 'ENCADRANT' %}
                     {% if demande.statut == 'EN_ATTENTE_VALIDATION_ENSEIGNANT' %}
                         <a class="btn btn-primary" href="{% url 'teacher_comment_demande' demande.pk %}">Valider / Refuser pedagogiquement</a>
                     {% else %}
@@ -65,7 +65,7 @@
                     {% endif %}
                 {% endif %}
                 {% if request.user.role == 'LABRESPO' %}
-                    {% if demande.statut == 'VALIDEE_PAR_ENSEIGNANT' or demande.statut == 'EN_COURS_TRAITEMENT' or demande.statut == 'EN_PAUSE' or demande.statut == 'DISPONIBLE' or demande.statut == 'RETIREE' %}
+                    {% if demande.statut == 'VALIDEE_PAR_ENSEIGNANT' or demande.statut == 'EN_COURS_TRAITEMENT' or demande.statut == 'EN_PAUSE' or demande.statut == 'ENVOYEE_SERVICE_ACHAT' or demande.statut == 'MATERIEL_RECU_AU_LABO' or demande.statut == 'DISPONIBLE' or demande.statut == 'RETIREE' %}
                         <a class="btn btn-outline-primary" href="{% url 'labrespo_decision_demande' demande.pk %}">Mettre a jour le statut labo</a>
                     {% endif %}
                     {% if demande.statut == 'DISPONIBLE' and demande.type_demande == 'EXISTANT' %}
@@ -75,7 +75,18 @@
                         <a class="btn btn-warning" href="{% url 'confirmer_retour' demande.pk %}">Confirmer retour et terminer</a>
                     {% endif %}
                     {% if demande.statut == 'EN_ATTENTE_VALIDATION_ENSEIGNANT' %}
-                        <div class="alert alert-light border mb-0">Le laboratoire attend d'abord la validation enseignant.</div>
+                        <div class="alert alert-light border mb-0">Le laboratoire attend d'abord la validation encadrant.</div>
+                    {% endif %}
+                    {% if demande.statut == 'ACHAT_EN_COURS_TRAITEMENT' or demande.statut == 'ACHAT_EN_COURS_LIVRAISON' %}
+                        <div class="alert alert-info mb-0">Le service achat est en train de traiter cette demande.</div>
+                    {% endif %}
+                {% endif %}
+                {% if request.user.role == 'SERVICE_ACHAT' %}
+                    {% if demande.statut == 'ENVOYEE_SERVICE_ACHAT' or demande.statut == 'ACHAT_EN_COURS_TRAITEMENT' or demande.statut == 'ACHAT_EN_COURS_LIVRAISON' %}
+                        <a class="btn btn-outline-primary" href="{% url 'service_achat_decision_demande' demande.pk %}">Mettre a jour le statut achat</a>
+                    {% endif %}
+                    {% if demande.statut == 'MATERIEL_RECU_AU_LABO' %}
+                        <div class="alert alert-success mb-0">Materiel recu au laboratoire, le service achat n'a plus d'action.</div>
                     {% endif %}
                 {% endif %}
                 <a class="btn btn-secondary" href="{% url 'demande_list' %}">Retour liste</a>

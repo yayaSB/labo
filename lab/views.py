@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.db import models, transaction
 from django.db.models import Count
@@ -16,19 +18,27 @@ from .forms import (
     LabRespoDecisionForm,
     LigneDemandeFormSet,
     MaterielForm,
+    ServiceAchatDecisionForm,
     TeacherDecisionForm,
+    UserProfileForm,
 )
 from .mixins import RoleRequiredMixin
-from .models import AffectationGroupe, Demande, Groupe, Materiel, MouvementStock, User
+from .models import (
+    AffectationGroupe,
+    Demande,
+    Groupe,
+    Materiel,
+    MouvementStock,
+    User,
+)
 
 
 def _role_dashboard_name(role):
     return {
         User.Role.ETUDIANT: "dashboard_etudiant",
         User.Role.ENCADRANT: "dashboard_enseignant",
-        User.Role.ENSEIGNANT: "dashboard_enseignant",
-        User.Role.LABO_TEMPS: "dashboard_labrespo",
         User.Role.LABRESPO: "dashboard_labrespo",
+        User.Role.SERVICE_ACHAT: "dashboard_service_achat",
         User.Role.SERVICE_3PH: "dashboard_service3ph",
     }.get(role, "login")
 
@@ -47,8 +57,16 @@ LABRESPO_MANAGEABLE_STATUSES = {
     Demande.Statut.VALIDEE_PAR_ENSEIGNANT,
     Demande.Statut.EN_COURS_TRAITEMENT,
     Demande.Statut.EN_PAUSE,
+    Demande.Statut.ENVOYEE_SERVICE_ACHAT,
+    Demande.Statut.MATERIEL_RECU_AU_LABO,
     Demande.Statut.DISPONIBLE,
     Demande.Statut.RETIREE,
+}
+
+SERVICE_ACHAT_MANAGEABLE_STATUSES = {
+    Demande.Statut.ENVOYEE_SERVICE_ACHAT,
+    Demande.Statut.ACHAT_EN_COURS_TRAITEMENT,
+    Demande.Statut.ACHAT_EN_COURS_LIVRAISON,
 }
 
 
@@ -56,18 +74,63 @@ def _labrespo_status_choices(demande):
     choices = [
         (Demande.Statut.EN_COURS_TRAITEMENT, "Mettre en cours de traitement"),
         (Demande.Statut.EN_PAUSE, "Mettre en pause"),
-        (Demande.Statut.DISPONIBLE, "Marquer disponible"),
-        (Demande.Statut.REFUSEE, "Refuser"),
-        (Demande.Statut.TERMINEE, "Terminer"),
     ]
-    if demande.type_demande == Demande.TypeDemande.EXISTANT:
-        choices.insert(3, (Demande.Statut.RETIREE, "Marquer retiree"))
+
+    if demande.type_demande == Demande.TypeDemande.NOUVEAU:
+        choices.append((Demande.Statut.ENVOYEE_SERVICE_ACHAT, "Envoyer au service achat"))
+        if demande.statut == Demande.Statut.MATERIEL_RECU_AU_LABO:
+            choices.append((Demande.Statut.DISPONIBLE, "Marquer disponible"))
+    else:
+        choices.append((Demande.Statut.DISPONIBLE, "Marquer disponible"))
+        choices.append((Demande.Statut.RETIREE, "Marquer retiree"))
+
+    choices.extend(
+        [
+            (Demande.Statut.REFUSEE, "Refuser"),
+            (Demande.Statut.TERMINEE, "Terminer"),
+        ]
+    )
     return choices
 
 
 @login_required
 def role_redirect(request):
     return redirect(_role_dashboard_name(request.user.role))
+
+
+@login_required
+def profile_settings(request):
+    if request.method == "POST" and "update_profile" in request.POST:
+        profile_form = UserProfileForm(request.POST, instance=request.user)
+        password_form = PasswordChangeForm(request.user)
+        if profile_form.is_valid():
+            profile_form.save()
+            messages.success(request, "Profil mis a jour.")
+            return redirect("profile_settings")
+    elif request.method == "POST" and "change_password" in request.POST:
+        profile_form = UserProfileForm(instance=request.user)
+        password_form = PasswordChangeForm(request.user, request.POST)
+        if password_form.is_valid():
+            updated_user = password_form.save()
+            update_session_auth_hash(request, updated_user)
+            messages.success(request, "Mot de passe modifie avec succes.")
+            return redirect("profile_settings")
+    else:
+        profile_form = UserProfileForm(instance=request.user)
+        password_form = PasswordChangeForm(request.user)
+
+    for field in password_form.fields.values():
+        existing = field.widget.attrs.get("class", "")
+        field.widget.attrs["class"] = f"{existing} form-control".strip()
+
+    return render(
+        request,
+        "profile/settings.html",
+        {
+            "profile_form": profile_form,
+            "password_form": password_form,
+        },
+    )
 
 
 class DashboardEtudiantView(RoleRequiredMixin, TemplateView):
@@ -89,6 +152,10 @@ class DashboardEtudiantView(RoleRequiredMixin, TemplateView):
                 statut__in=[
                     Demande.Statut.EN_COURS_TRAITEMENT,
                     Demande.Statut.EN_PAUSE,
+                    Demande.Statut.ENVOYEE_SERVICE_ACHAT,
+                    Demande.Statut.ACHAT_EN_COURS_TRAITEMENT,
+                    Demande.Statut.ACHAT_EN_COURS_LIVRAISON,
+                    Demande.Statut.MATERIEL_RECU_AU_LABO,
                     Demande.Statut.DISPONIBLE,
                     Demande.Statut.RETIREE,
                 ]
@@ -101,7 +168,7 @@ class DashboardEtudiantView(RoleRequiredMixin, TemplateView):
 
 class DashboardEnseignantView(RoleRequiredMixin, TemplateView):
     template_name = "dashboard/enseignant_dashboard.html"
-    required_roles = [User.Role.ENSEIGNANT, User.Role.ENCADRANT]
+    required_roles = [User.Role.ENCADRANT]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -123,7 +190,7 @@ class DashboardEnseignantView(RoleRequiredMixin, TemplateView):
 
 class DashboardLabRespoView(RoleRequiredMixin, TemplateView):
     template_name = "dashboard/labrespo_dashboard.html"
-    required_roles = [User.Role.LABRESPO, User.Role.LABO_TEMPS]
+    required_roles = [User.Role.LABRESPO]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -154,6 +221,37 @@ class DashboardLabRespoView(RoleRequiredMixin, TemplateView):
         return context
 
 
+class DashboardServiceAchatView(RoleRequiredMixin, TemplateView):
+    template_name = "dashboard/serviceachat_dashboard.html"
+    required_roles = [User.Role.SERVICE_ACHAT]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        demandes_qs = Demande.objects.filter(
+            type_demande=Demande.TypeDemande.NOUVEAU,
+            statut__in=Demande.STATUTS_ACHAT,
+        ).select_related("etudiant", "groupe", "nouveau_materiel")
+
+        pending_demandes = demandes_qs.filter(statut__in=SERVICE_ACHAT_MANAGEABLE_STATUSES)
+        context["stats"] = {
+            "a_traiter": demandes_qs.filter(
+                statut=Demande.Statut.ENVOYEE_SERVICE_ACHAT
+            ).count(),
+            "en_traitement": demandes_qs.filter(
+                statut=Demande.Statut.ACHAT_EN_COURS_TRAITEMENT
+            ).count(),
+            "en_livraison": demandes_qs.filter(
+                statut=Demande.Statut.ACHAT_EN_COURS_LIVRAISON
+            ).count(),
+            "recu_labo": demandes_qs.filter(
+                statut=Demande.Statut.MATERIEL_RECU_AU_LABO
+            ).count(),
+        }
+        context["pending_demandes"] = pending_demandes[:10]
+        context["recent_demandes"] = demandes_qs[:10]
+        return context
+
+
 class DashboardService3PHView(RoleRequiredMixin, TemplateView):
     template_name = "dashboard/service3ph_dashboard.html"
     required_roles = [User.Role.SERVICE_3PH]
@@ -163,7 +261,7 @@ class DashboardService3PHView(RoleRequiredMixin, TemplateView):
         context["stats"] = {
             "groupes": Groupe.objects.count(),
             "etudiants": User.objects.filter(role=User.Role.ETUDIANT).count(),
-            "enseignants": User.objects.filter(role=User.Role.ENSEIGNANT).count(),
+            "encadrants": User.objects.filter(role=User.Role.ENCADRANT).count(),
             "affectations": AffectationGroupe.objects.count(),
         }
         context["demandes"] = Demande.objects.select_related("etudiant", "groupe")[:10]
@@ -314,9 +412,8 @@ class DemandeListView(RoleRequiredMixin, ListView):
     required_roles = [
         User.Role.ETUDIANT,
         User.Role.ENCADRANT,
-        User.Role.ENSEIGNANT,
-        User.Role.LABO_TEMPS,
         User.Role.LABRESPO,
+        User.Role.SERVICE_ACHAT,
         User.Role.SERVICE_3PH,
     ]
 
@@ -325,8 +422,13 @@ class DemandeListView(RoleRequiredMixin, ListView):
         queryset = Demande.objects.select_related("etudiant", "groupe")
         if user.role == User.Role.ETUDIANT:
             queryset = queryset.filter(etudiant=user)
-        elif user.role in [User.Role.ENSEIGNANT, User.Role.ENCADRANT]:
+        elif user.role == User.Role.ENCADRANT:
             queryset = queryset.filter(groupe_id__in=_teacher_group_ids(user))
+        elif user.role == User.Role.SERVICE_ACHAT:
+            queryset = queryset.filter(
+                type_demande=Demande.TypeDemande.NOUVEAU,
+                statut__in=Demande.STATUTS_ACHAT,
+            )
         return queryset
 
 
@@ -343,7 +445,11 @@ def demande_detail(request, pk):
     authorized = user.role in [User.Role.LABRESPO, User.Role.SERVICE_3PH]
     authorized = authorized or (user.role == User.Role.ETUDIANT and demande.etudiant_id == user.id)
     authorized = authorized or (
-        user.role in [User.Role.ENSEIGNANT, User.Role.ENCADRANT]
+        user.role == User.Role.SERVICE_ACHAT
+        and demande.type_demande == Demande.TypeDemande.NOUVEAU
+    )
+    authorized = authorized or (
+        user.role == User.Role.ENCADRANT
         and _is_group_teacher(user, demande.groupe_id)
     )
 
@@ -355,7 +461,7 @@ def demande_detail(request, pk):
 
 @login_required
 def teacher_groups(request):
-    if request.user.role not in [User.Role.ENSEIGNANT, User.Role.ENCADRANT]:
+    if request.user.role != User.Role.ENCADRANT:
         return HttpResponseForbidden("Acces interdit")
     affectations = AffectationGroupe.objects.filter(enseignant=request.user).select_related(
         "groupe"
@@ -366,9 +472,9 @@ def teacher_groups(request):
 @login_required
 def group_detail(request, pk):
     groupe = get_object_or_404(Groupe, pk=pk)
-    if request.user.role in [User.Role.ENSEIGNANT, User.Role.ENCADRANT] and not _is_group_teacher(request.user, pk):
+    if request.user.role == User.Role.ENCADRANT and not _is_group_teacher(request.user, pk):
         return HttpResponseForbidden("Acces interdit")
-    if request.user.role not in [User.Role.ENSEIGNANT, User.Role.ENCADRANT, User.Role.SERVICE_3PH]:
+    if request.user.role not in [User.Role.ENCADRANT, User.Role.SERVICE_3PH]:
         return HttpResponseForbidden("Acces interdit")
     membres = groupe.membres.select_related("etudiant")
     demandes = groupe.demandes.select_related("etudiant")[:20]
@@ -381,7 +487,7 @@ def group_detail(request, pk):
 
 @login_required
 def teacher_comment_demande(request, pk):
-    if request.user.role not in [User.Role.ENSEIGNANT, User.Role.ENCADRANT]:
+    if request.user.role != User.Role.ENCADRANT:
         return HttpResponseForbidden("Acces interdit")
 
     demande = get_object_or_404(Demande, pk=pk)
@@ -391,7 +497,7 @@ def teacher_comment_demande(request, pk):
     if demande.statut != Demande.Statut.EN_ATTENTE_VALIDATION_ENSEIGNANT:
         messages.warning(
             request,
-            "Cette demande n'est plus en attente de validation enseignant.",
+            "Cette demande n'est plus en attente de validation encadrant.",
         )
         return redirect("demande_detail", pk=demande.pk)
 
@@ -417,7 +523,7 @@ def teacher_comment_demande(request, pk):
 
 @login_required
 def labrespo_decision_demande(request, pk):
-    if request.user.role not in [User.Role.LABRESPO, User.Role.LABO_TEMPS]:
+    if request.user.role != User.Role.LABRESPO:
         return HttpResponseForbidden("Acces interdit")
     demande = get_object_or_404(
         Demande.objects.prefetch_related("lignes_demande__materiel"), pk=pk
@@ -426,7 +532,7 @@ def labrespo_decision_demande(request, pk):
     if demande.statut not in LABRESPO_MANAGEABLE_STATUSES:
         messages.warning(
             request,
-            "Le laboratoire ne peut traiter que les demandes validees par l'enseignant ou deja en traitement.",
+            "Le laboratoire ne peut traiter que les demandes pedagogiquement validees ou deja en cours.",
         )
         return redirect("demande_detail", pk=demande.pk)
 
@@ -455,6 +561,16 @@ def labrespo_decision_demande(request, pk):
                 )
                 return redirect("demande_detail", pk=demande.pk)
 
+            if (
+                decision == Demande.Statut.ENVOYEE_SERVICE_ACHAT
+                and demande.type_demande != Demande.TypeDemande.NOUVEAU
+            ):
+                messages.error(
+                    request,
+                    "L'envoi au service achat est reserve aux demandes de nouveau materiel.",
+                )
+                return redirect("demande_detail", pk=demande.pk)
+
             demande.statut = decision
             demande.save()
             messages.success(request, "Statut laboratoire mis a jour.")
@@ -472,7 +588,7 @@ def labrespo_decision_demande(request, pk):
 
 @login_required
 def confirmer_sortie(request, pk):
-    if request.user.role not in [User.Role.LABRESPO, User.Role.LABO_TEMPS]:
+    if request.user.role != User.Role.LABRESPO:
         return HttpResponseForbidden("Acces interdit")
 
     demande = get_object_or_404(
@@ -516,7 +632,7 @@ def confirmer_sortie(request, pk):
 
 @login_required
 def confirmer_retour(request, pk):
-    if request.user.role not in [User.Role.LABRESPO, User.Role.LABO_TEMPS]:
+    if request.user.role != User.Role.LABRESPO:
         return HttpResponseForbidden("Acces interdit")
     demande = get_object_or_404(
         Demande.objects.prefetch_related("lignes_demande__materiel"), pk=pk
@@ -550,11 +666,48 @@ def confirmer_retour(request, pk):
     return redirect("demande_detail", pk=pk)
 
 
+@login_required
+def service_achat_decision_demande(request, pk):
+    if request.user.role != User.Role.SERVICE_ACHAT:
+        return HttpResponseForbidden("Acces interdit")
+
+    demande = get_object_or_404(
+        Demande.objects.select_related("etudiant", "groupe", "nouveau_materiel"), pk=pk
+    )
+    if demande.type_demande != Demande.TypeDemande.NOUVEAU:
+        messages.error(request, "Le service achat traite uniquement les demandes nouveau materiel.")
+        return redirect("demande_detail", pk=pk)
+
+    if demande.statut not in SERVICE_ACHAT_MANAGEABLE_STATUSES:
+        messages.warning(
+            request,
+            "Cette demande n'est pas encore en file de traitement achat.",
+        )
+        return redirect("demande_detail", pk=demande.pk)
+
+    if request.method == "POST":
+        form = ServiceAchatDecisionForm(request.POST, instance=demande)
+        if form.is_valid():
+            demande = form.save(commit=False)
+            demande.statut = form.cleaned_data["statut"]
+            demande.save()
+            messages.success(request, "Statut service achat mis a jour.")
+            return redirect("demande_detail", pk=demande.pk)
+    else:
+        form = ServiceAchatDecisionForm(instance=demande)
+
+    return render(
+        request,
+        "demands/service_achat_decision_form.html",
+        {"form": form, "demande": demande},
+    )
+
+
 class MouvementStockListView(RoleRequiredMixin, ListView):
     model = MouvementStock
     template_name = "materials/mouvement_list.html"
     context_object_name = "mouvements"
-    required_roles = [User.Role.LABRESPO, User.Role.LABO_TEMPS]
+    required_roles = [User.Role.LABRESPO]
 
     def get_queryset(self):
         return MouvementStock.objects.select_related("materiel", "demande", "valide_par")
@@ -581,7 +734,7 @@ class EnseignantListServiceView(RoleRequiredMixin, ListView):
     required_roles = [User.Role.SERVICE_3PH]
 
     def get_queryset(self):
-        return User.objects.filter(role__in=[User.Role.ENSEIGNANT, User.Role.ENCADRANT])
+        return User.objects.filter(role=User.Role.ENCADRANT)
 
 
 class AffectationCreateView(RoleRequiredMixin, CreateView):

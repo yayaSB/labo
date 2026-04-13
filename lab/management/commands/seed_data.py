@@ -22,8 +22,9 @@ class Command(BaseCommand):
         users_data = [
             ("labrespo", "LABRESPO"),
             ("service3ph", "SERVICE_3PH"),
-            ("enseignant1", "ENSEIGNANT"),
-            ("enseignant2", "ENSEIGNANT"),
+            ("serviceachat", "SERVICE_ACHAT"),
+            ("encadrant1", "ENCADRANT"),
+            ("encadrant2", "ENCADRANT"),
             ("etudiant1", "ETUDIANT"),
             ("etudiant2", "ETUDIANT"),
             ("etudiant3", "ETUDIANT"),
@@ -78,14 +79,14 @@ class Command(BaseCommand):
         AffectationGroupe.objects.get_or_create(
             groupe=created_groupes[0],
             defaults={
-                "enseignant": created_users["enseignant1"],
+                "enseignant": created_users["encadrant1"],
                 "attribue_par": created_users["service3ph"],
             },
         )
         AffectationGroupe.objects.get_or_create(
             groupe=created_groupes[1],
             defaults={
-                "enseignant": created_users["enseignant2"],
+                "enseignant": created_users["encadrant2"],
                 "attribue_par": created_users["service3ph"],
             },
         )

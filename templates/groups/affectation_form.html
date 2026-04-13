@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Affectation groupe{% endblock %}
 {% block content %}
-<h2 class="mb-3">{% if object %}Modifier{% else %}Creer{% endif %} une affectation groupe -> enseignant</h2>
+<h2 class="mb-3">{% if object %}Modifier{% else %}Creer{% endif %} une affectation groupe -> encadrant</h2>
 <form method="post" class="card">
     <div class="card-body">
         {% csrf_token %}

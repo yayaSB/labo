@@ -5,7 +5,7 @@
 <form method="post" class="card">
     <div class="card-body">
         {% csrf_token %}
-        <p class="text-muted">Mettez a jour le statut de traitement de la demande.</p>
+        <p class="text-muted">Mettez a jour le statut labo. Pour une demande de nouveau materiel, vous pouvez l'envoyer au service achat.</p>
         {{ form.as_p }}
         <button class="btn btn-primary">Enregistrer statut</button>
         <a href="{% url 'demande_detail' demande.pk %}" class="btn btn-secondary">Retour</a>

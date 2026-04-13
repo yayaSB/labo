@@ -8,8 +8,6 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         ETUDIANT = "ETUDIANT", "Etudiant"
         ENCADRANT = "ENCADRANT", "Encadrant"
-        ENSEIGNANT = "ENSEIGNANT", "Enseignant"
-        LABO_TEMPS = "LABO_TEMPS", "Labo Temps"
         LABRESPO = "LABRESPO", "LabRespo"
         SERVICE_ACHAT = "SERVICE_ACHAT", "Service Achat"
         SERVICE_3PH = "SERVICE_3PH", "Service 3PH"
@@ -36,10 +34,8 @@ class User(AbstractUser):
     def role_api(self):
         mapping = {
             self.Role.ETUDIANT: "etudiant",
-            self.Role.ENSEIGNANT: "encadrant",
             self.Role.ENCADRANT: "encadrant",
             self.Role.LABRESPO: "labo",
-            self.Role.LABO_TEMPS: "labo",
             self.Role.SERVICE_ACHAT: "achat",
             self.Role.SERVICE_3PH: "admin",
         }
@@ -100,11 +96,8 @@ class AffectationGroupe(models.Model):
         verbose_name_plural = "Affectations groupes"
 
     def clean(self):
-        if self.enseignant_id and self.enseignant.role not in [
-            User.Role.ENSEIGNANT,
-            User.Role.ENCADRANT,
-        ]:
-            raise ValidationError("Le destinataire doit etre un ENSEIGNANT.")
+        if self.enseignant_id and self.enseignant.role != User.Role.ENCADRANT:
+            raise ValidationError("Le destinataire doit etre un ENCADRANT.")
         if self.attribue_par_id and self.attribue_par.role != User.Role.SERVICE_3PH:
             raise ValidationError("L'attribution doit etre faite par SERVICE_3PH.")
 
@@ -158,18 +151,38 @@ class Demande(models.Model):
     class Statut(models.TextChoices):
         EN_ATTENTE_VALIDATION_ENSEIGNANT = (
             "EN_ATTENTE_VALIDATION_ENSEIGNANT",
-            "En attente de validation enseignant",
+            "En attente de validation encadrant",
         )
         VALIDEE_PAR_ENSEIGNANT = (
             "VALIDEE_PAR_ENSEIGNANT",
-            "Validee par enseignant",
+            "Validee par encadrant",
         )
         EN_COURS_TRAITEMENT = "EN_COURS_TRAITEMENT", "En cours de traitement"
         EN_PAUSE = "EN_PAUSE", "En pause"
+        ENVOYEE_SERVICE_ACHAT = "ENVOYEE_SERVICE_ACHAT", "Envoyee au service achat"
+        ACHAT_EN_COURS_TRAITEMENT = (
+            "ACHAT_EN_COURS_TRAITEMENT",
+            "Achat en cours de traitement",
+        )
+        ACHAT_EN_COURS_LIVRAISON = (
+            "ACHAT_EN_COURS_LIVRAISON",
+            "Achat en cours de livraison",
+        )
+        MATERIEL_RECU_AU_LABO = (
+            "MATERIEL_RECU_AU_LABO",
+            "Materiel recu au laboratoire",
+        )
         DISPONIBLE = "DISPONIBLE", "Disponible"
         REFUSEE = "REFUSEE", "Refusee"
         RETIREE = "RETIREE", "Retiree"
         TERMINEE = "TERMINEE", "Terminee"
+
+    STATUTS_ACHAT = {
+        Statut.ENVOYEE_SERVICE_ACHAT,
+        Statut.ACHAT_EN_COURS_TRAITEMENT,
+        Statut.ACHAT_EN_COURS_LIVRAISON,
+        Statut.MATERIEL_RECU_AU_LABO,
+    }
 
     etudiant = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="demandes_etudiant"
@@ -199,10 +212,14 @@ class Demande(models.Model):
     @property
     def statut_message(self):
         messages = {
-            self.Statut.EN_ATTENTE_VALIDATION_ENSEIGNANT: "En attente de validation de votre enseignant",
-            self.Statut.VALIDEE_PAR_ENSEIGNANT: "Validee par votre enseignant",
+            self.Statut.EN_ATTENTE_VALIDATION_ENSEIGNANT: "En attente de validation de votre encadrant",
+            self.Statut.VALIDEE_PAR_ENSEIGNANT: "Validee par votre encadrant",
             self.Statut.EN_COURS_TRAITEMENT: "En cours de traitement par le laboratoire",
             self.Statut.EN_PAUSE: "Mise en pause par le laboratoire",
+            self.Statut.ENVOYEE_SERVICE_ACHAT: "Votre demande a ete envoyee au service achat",
+            self.Statut.ACHAT_EN_COURS_TRAITEMENT: "Le service achat traite votre demande",
+            self.Statut.ACHAT_EN_COURS_LIVRAISON: "Le materiel est en cours de livraison",
+            self.Statut.MATERIEL_RECU_AU_LABO: "Le materiel a ete recu au laboratoire",
             self.Statut.DISPONIBLE: "Votre materiel est disponible",
             self.Statut.REFUSEE: "Votre demande a ete refusee",
             self.Statut.RETIREE: "Materiel retire, en attente de cloture",
@@ -217,6 +234,10 @@ class Demande(models.Model):
             self.Statut.VALIDEE_PAR_ENSEIGNANT: "bg-info text-dark",
             self.Statut.EN_COURS_TRAITEMENT: "bg-primary",
             self.Statut.EN_PAUSE: "bg-secondary",
+            self.Statut.ENVOYEE_SERVICE_ACHAT: "bg-warning text-dark",
+            self.Statut.ACHAT_EN_COURS_TRAITEMENT: "bg-primary",
+            self.Statut.ACHAT_EN_COURS_LIVRAISON: "bg-info text-dark",
+            self.Statut.MATERIEL_RECU_AU_LABO: "bg-success",
             self.Statut.DISPONIBLE: "bg-success",
             self.Statut.REFUSEE: "bg-danger",
             self.Statut.RETIREE: "bg-dark",
@@ -229,6 +250,10 @@ class Demande(models.Model):
         active_statuses = [
             self.Statut.EN_COURS_TRAITEMENT,
             self.Statut.EN_PAUSE,
+            self.Statut.ENVOYEE_SERVICE_ACHAT,
+            self.Statut.ACHAT_EN_COURS_TRAITEMENT,
+            self.Statut.ACHAT_EN_COURS_LIVRAISON,
+            self.Statut.MATERIEL_RECU_AU_LABO,
             self.Statut.DISPONIBLE,
             self.Statut.RETIREE,
         ]

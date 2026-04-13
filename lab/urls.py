@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path("", views.role_redirect, name="role_redirect"),
+    path("profil/", views.profile_settings, name="profile_settings"),
     path("dashboard/etudiant/", views.DashboardEtudiantView.as_view(), name="dashboard_etudiant"),
     path(
         "dashboard/enseignant/",
@@ -14,6 +15,11 @@ urlpatterns = [
         "dashboard/labrespo/",
         views.DashboardLabRespoView.as_view(),
         name="dashboard_labrespo",
+    ),
+    path(
+        "dashboard/service-achat/",
+        views.DashboardServiceAchatView.as_view(),
+        name="dashboard_service_achat",
     ),
     path(
         "dashboard/service3ph/",
@@ -45,6 +51,11 @@ urlpatterns = [
     ),
     path("demandes/<int:pk>/sortie/", views.confirmer_sortie, name="confirmer_sortie"),
     path("demandes/<int:pk>/retour/", views.confirmer_retour, name="confirmer_retour"),
+    path(
+        "demandes/<int:pk>/decision-achat/",
+        views.service_achat_decision_demande,
+        name="service_achat_decision_demande",
+    ),
     path("mouvements/", views.MouvementStockListView.as_view(), name="mouvement_list"),
     path("enseignant/groupes/", views.teacher_groups, name="teacher_group_list"),
     path("groupes/<int:pk>/", views.group_detail, name="group_detail"),

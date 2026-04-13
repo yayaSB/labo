@@ -26,7 +26,7 @@ class WorkflowAPITests(APITestCase):
         self.labo = User.objects.create_user(
             username="labo_test",
             password="LabResa123!",
-            role=User.Role.LABO_TEMPS,
+            role=User.Role.LABRESPO,
         )
         self.composant = Composant.objects.create(
             nom="Capteur test",

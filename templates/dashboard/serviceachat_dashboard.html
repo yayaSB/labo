@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Service Achat{% endblock %}
+{% block content %}
+<h2 class="mb-4">Dashboard Service Achat</h2>
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><p>A traiter</p><h3>{{ stats.a_traiter }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><p>En traitement</p><h3>{{ stats.en_traitement }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><p>En livraison</p><h3>{{ stats.en_livraison }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><p>Recues au labo</p><h3>{{ stats.recu_labo }}</h3></div></div></div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">Demandes a traiter par le service achat</div>
+    <div class="table-responsive">
+        <table class="table table-striped mb-0">
+            <thead><tr><th>ID</th><th>Etudiant</th><th>Materiel souhaite</th><th>Groupe</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+            {% for d in pending_demandes %}
+                <tr>
+                    <td>#{{ d.pk }}</td>
+                    <td>{{ d.etudiant }}</td>
+                    <td>{{ d.nouveau_materiel.nom_materiel_souhaite|default:"-" }}</td>
+                    <td>{{ d.groupe.nom_groupe }}</td>
+                    <td><span class="badge {{ d.statut_badge_class }}">{{ d.get_statut_display }}</span></td>
+                    <td><a href="{% url 'service_achat_decision_demande' d.pk %}" class="btn btn-sm btn-outline-primary">Mettre a jour</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">Aucune demande en attente achat.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Historique recent achat</div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>ID</th><th>Etudiant</th><th>Materiel souhaite</th><th>Date</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+            {% for d in recent_demandes %}
+                <tr>
+                    <td>#{{ d.pk }}</td>
+                    <td>{{ d.etudiant }}</td>
+                    <td>{{ d.nouveau_materiel.nom_materiel_souhaite|default:"-" }}</td>
+                    <td>{{ d.date_demande|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <span class="badge {{ d.statut_badge_class }}">{{ d.get_statut_display }}</span>
+                        <div class="small text-muted mt-1">{{ d.statut_message }}</div>
+                    </td>
+                    <td><a href="{% url 'demande_detail' d.pk %}" class="btn btn-sm btn-outline-secondary">Detail</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">Aucune demande achat.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

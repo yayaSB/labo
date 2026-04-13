@@ -22,6 +22,19 @@ class LabResaAuthenticationForm(AuthenticationForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={"class": "form-control"}))
 
 
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email", "departement", "classe"]
+        widgets = {
+            "first_name": forms.TextInput(attrs={"class": "form-control"}),
+            "last_name": forms.TextInput(attrs={"class": "form-control"}),
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+            "departement": forms.TextInput(attrs={"class": "form-control"}),
+            "classe": forms.TextInput(attrs={"class": "form-control"}),
+        }
+
+
 class MaterielForm(forms.ModelForm):
     class Meta:
         model = Materiel
@@ -127,10 +140,34 @@ class LabRespoDecisionForm(forms.ModelForm):
         self.fields["statut"].choices = [
             (Demande.Statut.EN_COURS_TRAITEMENT, "Mettre en cours de traitement"),
             (Demande.Statut.EN_PAUSE, "Mettre en pause"),
+            (Demande.Statut.ENVOYEE_SERVICE_ACHAT, "Envoyer au service achat"),
             (Demande.Statut.DISPONIBLE, "Marquer disponible"),
             (Demande.Statut.RETIREE, "Marquer retiree"),
             (Demande.Statut.REFUSEE, "Refuser"),
             (Demande.Statut.TERMINEE, "Terminer"),
+        ]
+
+
+class ServiceAchatDecisionForm(forms.ModelForm):
+    class Meta:
+        model = Demande
+        fields = ["statut"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["statut"].choices = [
+            (
+                Demande.Statut.ACHAT_EN_COURS_TRAITEMENT,
+                "Mettre en cours de traitement achat",
+            ),
+            (
+                Demande.Statut.ACHAT_EN_COURS_LIVRAISON,
+                "Mettre en cours de livraison",
+            ),
+            (
+                Demande.Statut.MATERIEL_RECU_AU_LABO,
+                "Marquer materiel recu au labo",
+            ),
         ]
 
 
@@ -141,6 +178,4 @@ class AffectationGroupeForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["enseignant"].queryset = User.objects.filter(
-            role__in=[User.Role.ENSEIGNANT, User.Role.ENCADRANT]
-        )
+        self.fields["enseignant"].queryset = User.objects.filter(role=User.Role.ENCADRANT)

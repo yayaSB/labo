@@ -179,7 +179,7 @@ class StudentAdminSerializer(serializers.ModelSerializer):
         ]
 
     def validate_encadrant(self, value):
-        if value and value.role not in [User.Role.ENCADRANT, User.Role.ENSEIGNANT]:
+        if value and value.role != User.Role.ENCADRANT:
             raise serializers.ValidationError("Encadrant invalide.")
         return value
 

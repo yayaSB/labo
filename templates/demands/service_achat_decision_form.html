@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Traitement Service Achat{% endblock %}
+{% block content %}
+<h2 class="mb-3">Traitement service achat - Demande #{{ demande.pk }}</h2>
+<form method="post" class="card">
+    <div class="card-body">
+        {% csrf_token %}
+        <p class="text-muted">Mettez a jour le statut achat de cette demande de nouveau materiel.</p>
+        {{ form.as_p }}
+        <button class="btn btn-primary">Enregistrer statut achat</button>
+        <a href="{% url 'demande_detail' demande.pk %}" class="btn btn-secondary">Retour</a>
+    </div>
+</form>
+{% endblock %}

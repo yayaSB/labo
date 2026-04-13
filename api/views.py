@@ -257,7 +257,7 @@ class EncadrantValiderAPIView(APIView):
         log_history(demande, "Validation encadrant", request.user)
         notify_user(demande.etudiant, f"Votre demande #{demande.id} est validee par encadrant.")
         notify_role_users(
-            [User.Role.LABRESPO, User.Role.LABO_TEMPS],
+            [User.Role.LABRESPO],
             f"Demande #{demande.id} en attente labo.",
         )
         return Response(DemandeWorkflowSerializer(demande).data)
@@ -414,7 +414,7 @@ class AchatReceptionnerAPIView(APIView):
             demande.save(update_fields=["statut", "date_derniere_maj"])
             log_history(demande, f"Achat #{achat.id} receptionne", request.user)
             notify_role_users(
-                [User.Role.LABRESPO, User.Role.LABO_TEMPS],
+                [User.Role.LABRESPO],
                 f"Achat receptionne pour la demande #{demande.id}. Retour en attente labo.",
             )
 
@@ -427,7 +427,7 @@ class EncadrantAdminListCreateAPIView(APIView):
     def get(self, request):
         if not _is_role(request.user, "admin"):
             return _forbidden_role_response()
-        encadrants = User.objects.filter(role__in=[User.Role.ENCADRANT, User.Role.ENSEIGNANT])
+        encadrants = User.objects.filter(role=User.Role.ENCADRANT)
         return Response(EncadrantAdminSerializer(encadrants, many=True).data)
 
     def post(self, request):
@@ -443,7 +443,7 @@ class EncadrantAdminDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self, encadrant_id):
-        return User.objects.filter(id=encadrant_id, role__in=[User.Role.ENCADRANT, User.Role.ENSEIGNANT]).first()
+        return User.objects.filter(id=encadrant_id, role=User.Role.ENCADRANT).first()
 
     def get(self, request, encadrant_id):
         if not _is_role(request.user, "admin"):
@@ -561,7 +561,7 @@ class StatistiquesAPIView(APIView):
         )
 
         refusal_rates = []
-        encadrants = User.objects.filter(role__in=[User.Role.ENCADRANT, User.Role.ENSEIGNANT])
+        encadrants = User.objects.filter(role=User.Role.ENCADRANT)
         for encadrant in encadrants:
             qs = DemandeWorkflow.objects.filter(etudiant__encadrant=encadrant)
             total = qs.count()

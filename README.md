@@ -42,7 +42,7 @@ Cette version contient:
 Le mapping est gere via `User.role_api`:
 - `ETUDIANT -> etudiant`
 - `ENCADRANT` ou `ENSEIGNANT -> encadrant`
-- `LABO_TEMPS` ou `LABRESPO -> labo`
+- `LABRESPO -> labo`
 - `SERVICE_ACHAT -> achat`
 - `SERVICE_3PH -> admin`
 

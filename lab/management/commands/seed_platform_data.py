@@ -11,7 +11,7 @@ class Command(BaseCommand):
         users = [
             ("admin3ph", "SERVICE_3PH", "admin3ph@labresa.local"),
             ("encadrant1", "ENCADRANT", "encadrant1@labresa.local"),
-            ("labo1", "LABO_TEMPS", "labo1@labresa.local"),
+            ("labo1", "LABRESPO", "labo1@labresa.local"),
             ("achat1", "SERVICE_ACHAT", "achat1@labresa.local"),
             ("etudiant1", "ETUDIANT", "etudiant1@labresa.local"),
             ("etudiant2", "ETUDIANT", "etudiant2@labresa.local"),
