@@ -23,6 +23,14 @@ class User(AbstractUser):
         null=True,
         blank=True,
         related_name="etudiants_encadres",
+        limit_choices_to={"role": "ENCADRANT"},
+    )
+    encadrants = models.ManyToManyField(
+        "self",
+        blank=True,
+        symmetrical=False,
+        related_name="etudiants_multi",
+        limit_choices_to={"role": "ENCADRANT"},
     )
     date_inscription = models.DateTimeField(default=timezone.now)
 
@@ -43,6 +51,16 @@ class User(AbstractUser):
 
     def has_api_role(self, *roles):
         return self.role_api in roles
+
+    def get_encadrants(self):
+        if self.role != self.Role.ETUDIANT:
+            return User.objects.none()
+        encadrants_qs = self.encadrants.all()
+        if encadrants_qs.exists():
+            return encadrants_qs
+        if self.encadrant_id:
+            return User.objects.filter(pk=self.encadrant_id)
+        return User.objects.none()
 
 
 class Groupe(models.Model):

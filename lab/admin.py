@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django import forms
+from django.forms import ModelForm
 
 from .models import (
     AffectationGroupe,
@@ -19,14 +21,45 @@ from .models import (
 )
 
 
+class CustomUserAdminForm(ModelForm):
+    groupes_etudiant = forms.ModelMultipleChoiceField(
+        queryset=Groupe.objects.none(),
+        required=False,
+        label="Groupes etudiant",
+        help_text="Selectionnez les groupes de cet etudiant.",
+    )
+
+    class Meta:
+        model = User
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["encadrants"].queryset = User.objects.filter(role=User.Role.ENCADRANT)
+        self.fields["encadrant"].queryset = User.objects.filter(role=User.Role.ENCADRANT)
+        self.fields["groupes_etudiant"].queryset = Groupe.objects.order_by("nom_groupe")
+
+        if self.instance and self.instance.pk and self.instance.role == User.Role.ETUDIANT:
+            self.fields["groupes_etudiant"].initial = Groupe.objects.filter(
+                membres__etudiant=self.instance
+            ).distinct()
+
+    def clean(self):
+        cleaned = super().clean()
+        role = cleaned.get("role")
+        groupes = cleaned.get("groupes_etudiant")
+        if role == User.Role.ETUDIANT and not groupes:
+            self.add_error(
+                "groupes_etudiant",
+                "Attribuez au moins un groupe a l'etudiant.",
+            )
+        return cleaned
+
+
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    fieldsets = UserAdmin.fieldsets + (
-        (
-            "Informations metier",
-            {"fields": ("role", "departement", "classe", "encadrant", "date_inscription")},
-        ),
-    )
+    form = CustomUserAdminForm
+    filter_horizontal = ("groups", "user_permissions", "encadrants")
     list_display = (
         "username",
         "email",
@@ -34,9 +67,82 @@ class CustomUserAdmin(UserAdmin):
         "last_name",
         "role",
         "classe",
+        "groupes_list",
+        "encadrants_list",
         "is_active",
     )
     list_filter = ("role", "is_active", "departement", "classe")
+
+    def get_fieldsets(self, request, obj=None):
+        metier_fields = [
+            "role",
+            "departement",
+            "classe",
+            "date_inscription",
+            "encadrants",
+            "groupes_etudiant",
+        ]
+        return UserAdmin.fieldsets + (
+            (
+                "Informations metier",
+                {"fields": tuple(metier_fields)},
+            ),
+        )
+
+    @admin.display(description="Groupes")
+    def groupes_list(self, obj):
+        if obj.role != User.Role.ETUDIANT:
+            return "-"
+        groupes = Groupe.objects.filter(membres__etudiant=obj).distinct()
+        if not groupes.exists():
+            return "-"
+        return ", ".join(g.nom_groupe for g in groupes)
+
+    @admin.display(description="Encadrants")
+    def encadrants_list(self, obj):
+        if obj.role != User.Role.ETUDIANT:
+            return "-"
+        linked = obj.encadrants.all()
+        if linked.exists():
+            return ", ".join(str(e) for e in linked)
+        if obj.encadrant_id:
+            return str(obj.encadrant)
+        return "-"
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        user = form.instance
+        if user.role != User.Role.ETUDIANT:
+            user.encadrants.clear()
+            MembreGroupe.objects.filter(etudiant=user).delete()
+            if user.encadrant_id:
+                user.encadrant = None
+                user.save(update_fields=["encadrant"])
+            return
+
+        selected_groupes = form.cleaned_data.get("groupes_etudiant")
+        selected_ids = set(selected_groupes.values_list("id", flat=True)) if selected_groupes else set()
+        existing_ids = set(
+            MembreGroupe.objects.filter(etudiant=user).values_list("groupe_id", flat=True)
+        )
+
+        remove_ids = existing_ids - selected_ids
+        add_ids = selected_ids - existing_ids
+        if remove_ids:
+            MembreGroupe.objects.filter(etudiant=user, groupe_id__in=remove_ids).delete()
+        for groupe_id in add_ids:
+            MembreGroupe.objects.create(etudiant=user, groupe_id=groupe_id)
+
+        selected = user.encadrants.order_by("id")
+        first = selected.first()
+        if first and user.encadrant_id != first.id:
+            user.encadrant = first
+            user.save(update_fields=["encadrant"])
+        elif not first and user.encadrant_id:
+            user.encadrants.add(user.encadrant)
+
+    class Media:
+        js = ("admin/js/user_role_toggle.js",)
 
 
 @admin.register(Groupe)

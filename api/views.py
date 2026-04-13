@@ -3,7 +3,7 @@ import io
 
 from django.contrib.auth import authenticate, get_user_model
 from django.db import transaction
-from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F
+from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F, Q
 from django.http import HttpResponse
 from django.utils import timezone
 from reportlab.lib.pagesizes import A4
@@ -40,6 +40,12 @@ def _forbidden_role_response():
 
 def _is_role(user, *roles):
     return user.is_authenticated and user.has_api_role(*roles)
+
+
+def _student_has_encadrant(student, encadrant):
+    if student.encadrants.filter(id=encadrant.id).exists():
+        return True
+    return student.encadrant_id == encadrant.id
 
 
 class LoginAPIView(APIView):
@@ -182,9 +188,9 @@ class StudentDemandeCreateAPIView(APIView):
         )
         log_history(demande, "Creation demande par etudiant", request.user)
 
-        if request.user.encadrant:
+        for encadrant in request.user.get_encadrants():
             notify_user(
-                request.user.encadrant,
+                encadrant,
                 f"Nouvelle demande #{demande.id} en attente de validation.",
             )
 
@@ -228,7 +234,9 @@ class EncadrantDemandesClasseAPIView(APIView):
         if not _is_role(request.user, "encadrant"):
             return _forbidden_role_response()
 
-        demandes = DemandeWorkflow.objects.filter(etudiant__encadrant=request.user)
+        demandes = DemandeWorkflow.objects.filter(
+            Q(etudiant__encadrants=request.user) | Q(etudiant__encadrant=request.user)
+        ).distinct()
         return Response(DemandeWorkflowSerializer(demandes, many=True).data)
 
 
@@ -243,7 +251,7 @@ class EncadrantValiderAPIView(APIView):
         demande = DemandeWorkflow.objects.filter(id=demande_id).select_related("etudiant").first()
         if not demande:
             return Response({"detail": "Demande introuvable."}, status=status.HTTP_404_NOT_FOUND)
-        if demande.etudiant.encadrant_id != request.user.id:
+        if not _student_has_encadrant(demande.etudiant, request.user):
             return _forbidden_role_response()
         if demande.statut != DemandeWorkflow.Statut.EN_ATTENTE_ENCADRANT:
             return Response(
@@ -274,7 +282,7 @@ class EncadrantRefuserAPIView(APIView):
         demande = DemandeWorkflow.objects.filter(id=demande_id).select_related("etudiant").first()
         if not demande:
             return Response({"detail": "Demande introuvable."}, status=status.HTTP_404_NOT_FOUND)
-        if demande.etudiant.encadrant_id != request.user.id:
+        if not _student_has_encadrant(demande.etudiant, request.user):
             return _forbidden_role_response()
         if demande.statut != DemandeWorkflow.Statut.EN_ATTENTE_ENCADRANT:
             return Response(
@@ -563,7 +571,9 @@ class StatistiquesAPIView(APIView):
         refusal_rates = []
         encadrants = User.objects.filter(role=User.Role.ENCADRANT)
         for encadrant in encadrants:
-            qs = DemandeWorkflow.objects.filter(etudiant__encadrant=encadrant)
+            qs = DemandeWorkflow.objects.filter(
+                Q(etudiant__encadrants=encadrant) | Q(etudiant__encadrant=encadrant)
+            ).distinct()
             total = qs.count()
             refused = qs.filter(statut=DemandeWorkflow.Statut.REFUSEE).count()
             rate = round((refused / total) * 100, 2) if total else 0

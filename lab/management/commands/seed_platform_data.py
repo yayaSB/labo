@@ -41,10 +41,12 @@ class Command(BaseCommand):
         created["etudiant1"].classe = "GI-3A"
         created["etudiant1"].encadrant = created["encadrant1"]
         created["etudiant1"].save(update_fields=["classe", "encadrant"])
+        created["etudiant1"].encadrants.set([created["encadrant1"]])
 
         created["etudiant2"].classe = "GI-3A"
         created["etudiant2"].encadrant = created["encadrant1"]
         created["etudiant2"].save(update_fields=["classe", "encadrant"])
+        created["etudiant2"].encadrants.set([created["encadrant1"]])
 
         c1, _ = Composant.objects.get_or_create(
             reference="RES-220",

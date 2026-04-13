@@ -23,6 +23,7 @@ class WorkflowAPITests(APITestCase):
             encadrant=self.encadrant,
             classe="GI-3A",
         )
+        self.etudiant.encadrants.set([self.encadrant])
         self.labo = User.objects.create_user(
             username="labo_test",
             password="LabResa123!",
